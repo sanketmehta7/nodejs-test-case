@@ -37,15 +37,12 @@ app.use( expressLayouts );
 
 
 var session = require('express-session');
-var FileStore = require('session-file-store')(session);
+var MongoStore = require('connect-mongo')(session);
+
 app.use(session({
-    store: new FileStore,
-    secret: 'Secret123!',
-    resave: true,
-    saveUninitialized: true,
-    maxAge: new Date(Date.now() + 1800000)    //half hour
-  })
-);
+    secret: 'secret123!',
+    store: new MongoStore({ url: config.mongoURI })
+}));
 
 var mongoDB = require( './config/mongoDB.js' );
 
