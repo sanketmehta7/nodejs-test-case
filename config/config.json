@@ -1,0 +1,7 @@
+{
+    "mongoURI": "mongodb://heroku_x61hkq50:Secret123!@ds019478.mlab.com:19478/heroku_x61hkq50",
+    "secret": "sk_test_7M60AQasuzi4BkmBTEH1qVVx",
+    "stripeApiKey": "pk_test_OyogARV9IdUvtRV58JawJ5TP" 
+}
+
+
