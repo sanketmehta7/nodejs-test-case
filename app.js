@@ -35,6 +35,18 @@ app.use( cookieParser() );
 app.use( express.static( path.join( __dirname, 'public' ) ) );
 app.use( expressLayouts );
 
+
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
+app.use(session({
+    store: new FileStore,
+    secret: 'Secret123!',
+    resave: true,
+    saveUninitialized: true,
+    maxAge: new Date(Date.now() + 1800000)    //half hour
+  })
+);
+
 var mongoDB = require( './config/mongoDB.js' );
 
 
@@ -46,7 +58,8 @@ app.use( '/users', users );
 app.use( function( req, res, next ) {
     var err = new Error( 'Not Found' );
     err.status = 404;
-    next( err );
+    res.status( 404 );
+    res.render( '404');
 } );
 
 // error handlers

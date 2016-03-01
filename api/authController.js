@@ -3,17 +3,16 @@
 var User = require( '../models/user.model.js' );
 var jwt = require( 'jsonwebtoken' );
 var config = require( '../config' );
+var Stripe = require( 'stripe' )( config.secret );
 
-exports.index = function( req, res ) {
+exports.index = function( req, res,next ) {
 
     // find the user
     User.findOne( {
         name: req.body.name
     }, function( err, user ) {
 
-        if ( err ) {
-            throw err;
-        }
+        if(err) return next(err);
 
         if ( !user ) {
             res.json( {
@@ -23,9 +22,7 @@ exports.index = function( req, res ) {
         }
         else if ( user ) {
             user.comparePassword( req.body.password, function( err, isMatch ) {
-                if ( err ) {
-                    throw err;
-                }
+                if(err) return next(err);
 
                 if(!isMatch) {
                     return res.status( 401 ).json( {
@@ -36,15 +33,46 @@ exports.index = function( req, res ) {
 
                 // if user is found and password is right
                 // create a token
+                 //req.session = {};
+                 delete req.session.user;
+                req.session.user = user;
                 var token = jwt.sign( user, config.secret, {
                     expiresIn: 1440 // expires in 24 hours
                 } );
+                if(user.stripeCust!="" && user.cards.length){
 
+                    Stripe.customers.retrieveCard(
+                      user.stripeCust,
+                      user.cards[0],
+                      function(err, card) {
+                        if(err ==null && typeof card.id !="undefined"){
+                            res.render( 'transactions', {
+                                token: token,
+                                cards:[card],
+                                cust:typeof user.stripeCust!="undefined" && user.stripeCust!=null && user.stripeCust!=""?user.stripeCust:"",
+                                title: 'Transactions Page'
+                              }); 
+                        }else{
+                          res.render( 'transactions', {
+                            token: token,
+                            cards:[],
+                            cust:typeof user.stripeCust!="undefined" && user.stripeCust!=null && user.stripeCust!=""?user.stripeCust:"",
+                            title: 'Transactions Page'
+                          }); 
+                        }
+                      }
+                    );
+
+                }else{
+                    res.render( 'transactions', {
+                        token: token,
+                        cards:[],
+                        cust:"",
+                        title: 'Transactions Page'
+                    } );
+                }
                 // return the information including token as JSON
-                res.render( 'transactions', {
-                    token: token,
-                    title: 'Transactions Page'
-                } );
+                
 
             } );
         }
@@ -52,16 +80,14 @@ exports.index = function( req, res ) {
     } );
 };
 
-exports.register = function( req, res ) {
+exports.register = function( req, res,next ) {
 
     // find the user
     User.findOne( {
         name: req.body.name
     }, function( err, user ) {
 
-        if ( err ) {
-            throw err;
-        }
+        if(err) return next(err);
 
         if ( user ) {
             res.json( {
@@ -72,7 +98,9 @@ exports.register = function( req, res ) {
         else {
             user = new User( {
                 name: req.body.name,
-                password: req.body.password
+                password: req.body.password,
+                cards:[],
+                stripeCust:""
             } );
             user.save( function( err ) {
                 if ( err ) {
@@ -91,10 +119,17 @@ exports.register = function( req, res ) {
                 // return the information including token as JSON
                 res.render( 'transactions', {
                     token: token,
-                    title: 'Transactions Page'
+                    title: 'Transactions Page',
+                    cards:[],
+                    cust:""
                 } );
             } );
         }
 
     } );
 };
+
+exports.logout = function( req, res,next ) {
+  delete req.session.user;
+  res.redirect('/login');
+}

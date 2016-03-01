@@ -12,8 +12,12 @@ var config = require( '../config' );
 /* GET home page. */
 /*Save transaction to database*/
 
-
-
+router.get( '/', function( req, res ) {
+    res.render( 'index', {
+        title: 'User'
+    } );
+} );
+router.get( '/logout', authController.logout );
 router.post( '/authenticate', authController.index );
 router.post( '/register', authController.register );
 
@@ -24,11 +28,11 @@ router.get( '/login', function( req, res ) {
     } );
 } );
 
-router.use( function( req, res, next ) {
-
+function checkAuthBefore( req, res, next ) {
     // check header or url parameters or post parameters for token
-    var token = req.body.token || req.query.token || req.headers[ 'x-access-token' ];
+    var token = req.headers[ 'x-access-token' ] || req.body.token || req.query.token  ;
     // decode token
+    console.log(token);
     if ( token ) {
         // verifies secret and checks exp
         jwt.verify( token, config.secret, function( err, decoded ) {
@@ -55,9 +59,9 @@ router.use( function( req, res, next ) {
             message: 'No token provided.'
         } );
     }
-} );
+} ;
 
 
-router.post( '/createtransaction', transactionController.createTransaction );
+router.post( '/createtransaction',checkAuthBefore, transactionController.createTransaction );
 
 module.exports = router;
